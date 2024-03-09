@@ -1,0 +1,538 @@
+CS224
+Lab 2.
+Section 1.
+Ayca Candan Atac
+22203501
+26.02.2024
+
+
+
+
+PART 1- PRELIMINARY- HEX TO DECIMAL
+
+
+
+.text		
+	.globl main
+	
+	
+main:
+	#leave a line for readibility
+	la $a0, endl
+	li $v0, 4
+	syscall
+	
+	#ask user for input
+	la $a0, question
+	li $v0, 4
+	syscall
+	
+	#take the hex input
+	li $v0, 8              
+    	la $a0, myString   
+    	li $a1, 9        
+    	syscall
+
+	#jump to subprogram
+	j convertHexToDec
+afterValues:
+	move $s0, $v0
+	la $a0, endl
+	li $v0, 4
+	syscall
+	
+	la $a0, result
+	li $v0, 4
+	syscall
+	
+	move $a0, $s0
+	li $v0, 1
+	syscall
+	
+	la $a0, endl
+	li $v0, 4
+	syscall
+	j confirmation
+confirmation:
+
+	#ask the user if they want to continue the process
+	la $a0, continueQuestion
+	li $v0, 4
+	syscall
+	
+	#take the input char
+	li $v0, 8              
+    	la $a0, answerString   
+    	li $a1, 2        
+    	syscall
+	
+	#check if the char is 'Y', jump to end if it is not
+	lbu $s1, 0($a0)
+	bne $s1, 89, end
+	addi $s1, $0, 0
+	
+	#jump to main to continue the process
+	j main
+	
+convertHexToDec:
+	addi $s0, $0, 0 #s0 stores the decimal result
+	addi $s7, $0, 8 #s7 stores the byte count
+	la $s2, myString #s2 has the input's address
+	
+loop:
+	beq $s7, 0, afterValues
+	lbu $s1,0($s2) #take lsb 
+	blt $s1, 58, skip #if lsb is less than 10, we only subtract 48
+    	sub $s1, $s1, 7 
+    	
+skip:
+    	sub $s1, $s1, 48 #turn from ASCII to decimal
+    	addi $s6, $s7, 0
+    	addi $s6, $s6, -1
+    	mul $s6, $s6, 4 #find the no for the amount of shift
+    	j shiftLeft
+    		
+shiftLeft:
+	#shift to convert the no
+	beq $s6, 0, continue
+	sll $s1, $s1, 1
+	sub $s6, $s6, 1
+	j shiftLeft
+    	
+continue:
+    	add $s0, $s0, $s1
+    	move $v0, $s0
+	addi $s1, $0, 0
+	addi $s2, $s2, 1
+	addi $s7, $s7, -1
+	j loop
+	
+end:
+	li $v0, 10 #exit
+	syscall
+
+
+.data
+myString: .space 9
+question: .asciiz "Please enter a hex number: "
+result: .asciiz "Your input has been converted to decimal. The result is: "
+continueQuestion: .asciiz "Enter Y to continue: "
+endl: 		.asciiz  "\n"
+answerString: .asciiz	
+
+
+
+
+
+
+
+
+
+
+
+
+
+PART 2- PRELIMINARY - INVERT BYTES
+
+.text		
+	.globl main
+
+main:
+	#ask the user for decimal input
+	la $a0, question
+	li $v0, 4
+	syscall
+	
+	#receive the input
+	li $v0, 5
+	syscall
+	
+	move $s0, $v0 #s0 has the input
+	
+	li $s1, 16
+	addi $s2, $0, 0 #result is stored in s2
+	addi $s5, $0, 0 #address index of result string
+	j loop
+	
+confirmation:
+	la $a0, endl
+	li $v0, 4
+	syscall
+	
+	#asks the user if they want to continue with the process
+	la $a0, continueQuestion
+	li $v0, 4
+	syscall
+	
+	#receives the char input
+	li $v0, 8              
+    	la $a0, answerString   
+    	li $a1, 2        
+    	syscall
+	
+	#jumps to main if the char is Y, jumps to end if it is not
+	lbu $s1, 0($a0)
+	bne $s1, 89, end
+	addi $s1, $0, 0
+	
+	la $a0, endl
+	li $v0, 4
+	syscall
+	
+	j main
+	
+loop:	
+	div $s0, $s1
+	mflo $s3 #quotient
+	mfhi $s4 #remainder
+	blt $s4, 10, skip # if character is '0' - '9', skip addition
+    	addi $s4, $s4, 7 
+skip:
+	addi $s4, $s4, 48 # turn remainder into ASCII
+	sb $s4, result($s5)
+	move $s0, $s3
+	beq $s3, 0, done
+	addi $s5, $s5, 1
+	j loop
+
+done:
+	la $a0, resultMessage
+	li $v0, 4
+	syscall
+	
+	add $s6, $s5, 0
+	sub $s6, $s6, 7
+	addi $s0, $0, 7
+	addi $s7, $0, 7 
+	addi $s1, $0, 7 
+addZeros:
+	beq $s6, 0, invertBytes
+	li $a0, 48 # ASCII code for zero
+	sb $a0, result($s0)
+	sub $s0, $s0, 1
+	add $s6, $s6, 1
+	addi $s5, $0, 7
+	j addZeros
+invertBytes:	
+	la $a0, result
+	lw $v0, 0($a0)
+inverseFirstHalf:
+	beq $s1, 3, loadSecondHalf
+	andi $s7, $v0, 0xFF
+	sb $s7, invertedResult($s1)
+	srl $v0, $v0, 8
+	sub $s1, $s1, 1
+	j inverseFirstHalf
+	
+loadSecondHalf:
+	la $a0, result
+	lw $v0, 4($a0)
+	addi $s1, $0, 3
+invertSecondHalf: 
+	beq $s1, -1, print
+	andi $s7, $v0, 0xFF
+	sb $s7, invertedResult($s1)
+	srl $v0, $v0, 8
+	sub $s1, $s1, 1
+	j invertSecondHalf
+		
+print:  beq $s5, -1, endl1
+	lb $a0, result($s5)
+	li $v0, 11
+	syscall
+	
+	sub $s5, $s5, 1
+	j print
+	
+endl1: 	la $a0, endl
+	li $v0, 4
+	syscall
+	
+	la $a0, invertedResultMessage
+	li $v0, 4
+	syscall
+	addi $s1, $0, 7
+	j print2
+print2:
+	beq $s1, -1, endOne
+	lb $a0, invertedResult($s1)
+	li $v0, 11
+	syscall
+	
+	sub $s1, $s1, 1
+	j print2
+endOne:	
+	j confirmation
+
+end:
+	la $a0, invertedResult
+	lw $v0, 0($a0) #store result in v0
+	li $v0, 10
+	syscall
+
+
+
+
+
+
+
+	.data
+	
+result: .space 12
+invertedResult: .space 9
+question: .asciiz "Please enter a decimal number: "
+resultMessage: .asciiz "The input has been converted to hexadecimal. The result is: "
+invertedResultMessage: .asciiz "The input has been converted to hexadecimal and inverted. The result is: "
+endl: 		.asciiz  "\n"
+continueQuestion: .asciiz "Enter Y to continue: "
+answerString: .asciiz
+
+
+
+
+
+
+
+
+PART 3- LAB WORK- ARRAY- BUBBLE SORT- MINMAX
+
+
+.text
+
+main:
+	
+	#ask the user for the size of the array
+	la $a0, sizeQuestion
+	li $v0, 4
+	syscall
+	
+	#receive the size of the array
+	li $v0, 5
+	syscall
+	
+	#store the size of the array at $a1
+	move $a1, $v0
+	
+	#find the bytes to allocate
+	mul $s1, $a1, 4
+	
+	#transfer the byte no to a0 and create array dynamically
+	move $a0, $s1
+	li $v0, 9
+	syscall
+	
+	move $a0, $v0 #keep the address of the array at $a0
+	
+	jal monitor
+	
+	
+afterValues:
+	move $s0, $v0
+	move $s1, $v1
+	
+	la $a0, minMessage
+	li $v0, 4
+	syscall
+	
+	move $a0, $s0
+	li $v0, 1
+	syscall
+	
+	la $a0, endl
+	li $v0, 4
+	syscall
+	
+	mul $s6, $s6, 4
+	add $s5, $s5, $s6
+	sub $s5, $s5, 4
+	
+	lw $s0, 0($s5)
+	
+	la $a0, maxMessage
+	li $v0, 4
+	syscall
+	
+	move $a0, $s1
+	li $v0, 1
+	syscall
+	
+	la $a0, endl
+	li $v0, 4
+	syscall
+	
+	# shut program down
+	li $v0, 10
+	syscall
+
+monitor:
+	# $s2 will be a counter for number of elements to be entered
+	move $s2, $a1 
+	move $s6, $s2 
+	
+	# $s3 will help navigating through the array
+	move $s3, $a0 
+	move $s7, $s3
+	
+	
+  takeInput: 
+  	# out if no elements to be entered remain
+  	beq $s2, $zero, out 
+	
+	# ask user to enter the elements one by one
+	la $a0, elementQuestion
+	li $v0, 4	    
+	syscall
+	
+	# read the integer user entered
+	li $v0, 5	 
+	syscall
+	
+	move $s5, $v0
+	
+	# save element in the memory
+	sw $s5, 0($s3)	
+	
+	# increment adress to the next index of the array
+	addi $s3, $s3, 4 
+	
+	# decrement the counter by 1
+	addi $s2, $s2, -1  
+	j takeInput	
+   out: move $v0, $s7
+   	move $v1, $s6
+   	j bubbleSort
+
+bubbleSort:
+	move $a0, $v0
+	move $a1, $v1
+	
+ 	# s0 = array address, s1 = array size
+ 	move $s0, $a0
+ 	move $s1, $a1
+ 	
+ 	# BUBBLE SORT
+ 	
+ 	# put the address of the second element in s2
+ 	addi $s2, $s0, 4
+ 	
+ 	# last byte of the array in s3
+ 	sll $s3, $s1, 2
+ 	
+ 	add $s3, $s0, $s3
+
+	# initialize s7 as the change counter
+	# 1 because if it goes as zero the program will fail
+	addi $s7, $zero, 1
+	
+singlePass:
+	
+	# check counter, end the sort if it's 0.
+	beq $s7, $zero, endSort
+	
+	# set counter to 0
+	add $s7, $zero, $zero
+ 	
+singleComparison:
+	# end the pass if all elements are compared	
+ 	beq $s3, $s2, outOfPass
+ 	
+ 	# load the elements, first to s4, second to s5
+ 	lw $s4, 0($s0)
+ 	lw $s5, 0($s2)
+ 	
+ 	# if second element is less than the first, change them
+ 	bge $s5, $s4, noChangeNeeded
+ 	
+ 	# s6 is temp, change first with the second
+ 	add $s6, $s4, $zero
+ 	add $s4, $s5, $zero
+ 	add $s5, $s6, $zero
+ 	
+ 	# increment counter by 1
+ 	addi $s7, $s7, 1
+ 	
+ 	# store the elements as sorted
+ 	sw $s4, 0($s0)
+ 	sw $s5, 0($s2)
+ 	
+noChangeNeeded:
+
+ 	# increment s0 and s2 to the next element
+ 	addi $s0, $s0, 4
+ 	addi $s2, $s2, 4
+ 	
+ 	j singleComparison
+ 		  
+outOfPass: 
+	
+	# reset the values of s0 and s2
+	move $s0, $a0
+	
+	move $s2, $a0
+	addi $s2, $s2, 4
+	
+	j singlePass
+
+endSort:
+ 	move $v0, $a0
+ 	move $v1, $a1
+ 	move $s1, $v0
+ 	move $s5, $s1 #s5 is the address
+ 	addi $s7, $0, 0
+ 	j printLoop
+ 	
+printLoop:
+	beq $v1, $s7, minMax
+	lw $s3, 0($s1)
+	
+	move $a0, $s3
+	li $v0, 1
+	syscall
+	
+	la $a0, tab
+	li $v0, 4
+	syscall
+	
+ 	addi $s1, $s1, 4
+ 	addi $s7, $s7, 1
+ 	j printLoop
+ 	
+ 	 
+
+
+minMax:
+	la $a0, endl
+	li $v0, 4
+	syscall
+	
+	move $a0, $s5
+	move $a1, $v1
+	move $s6, $a1 #size
+	
+	lw $s3, 0($s5)
+	
+	
+	move $v0, $s3 #v0 holds min
+	
+	
+	mul $s6, $s6, 4
+	add $s5, $s5, $s6
+	sub $s5, $s5, 4
+	
+	lw $s0, 0($s5)
+	
+	move $v1, $s0 #v1 holds max
+	j afterValues
+	
+	
+
+
+	.data
+	
+sizeQuestion: .asciiz "Please enter the size of the array: "
+elementQuestion: .asciiz "Please enter an element for the array: "
+endl: 		.asciiz  "\n"
+minMessage: .asciiz "The min value of the array is: "
+maxMessage: .asciiz "The max value of the array is: "
+tab: 		.asciiz  "\t"
+# end

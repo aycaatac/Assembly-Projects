@@ -1,0 +1,452 @@
+CS224
+Lab 1.
+Section 1.
+Ayca Candan Atac
+22203501
+18.02.2024
+
+
+
+--------------------------------------------------PRELIMINARY---------------------------------------------------------------------------
+#################################
+#					 	#
+#		text segment		#
+#						#
+#################################
+
+	.text		
+	.globl __start
+
+__start:
+	
+	la $a0, question
+	li $v0, 4
+	syscall
+	
+	li $v0, 5
+	syscall
+	
+	
+	move $s0, $v0 #s0 = no of elements in the array
+	
+	blt $s0, 21, continue
+	addi $s0, $zero, 0 
+	
+	
+continue:
+	 
+	addi $s1, $zero, 0 # i = 0
+	la $t1, array #t1 is the starting point of the array
+	move $t2, $t1 #t2 will keep arr[0]'s address
+	
+loop0: beq $s1, $s0, done0
+	la $a0, endl
+	li $v0, 4
+	syscall
+	
+	la $a0, wantElement
+	li $v0, 4
+	syscall
+	
+	li $v0, 5
+	syscall
+	
+	sw $v0, 0($t1)
+	addi $t1, $t1, 4
+	addi $s1, $s1, 1
+	
+	j loop0
+
+done0: 
+	la $a0, endl
+	li $v0, 4
+	syscall
+	
+	add $s1, $zero, $zero
+	la $a0, askInteger
+	li $v0, 4
+	syscall
+	
+	li $v0, 5 #v0 has the int input
+	syscall
+	move $s2, $v0 #s2 the input
+	addi $t7, $zero, 0 # the numbers greater than input
+	addi $t8, $zero, 0 #numbers equal to input 
+	addi $t5, $zero, 0 #number of elements evenly divisible by N
+	add $t1, $t2, $zero
+	
+loop1:
+	beq $s1, $s0, done1
+	
+	lw $t3, 0($t1) #t3 is the curr element
+	div $t3, $s2
+	mfhi $s4
+	bge $s2, $t3, greaterOrEqual
+	addi $t7, $t7, 1
+	j divisible
+	
+greaterOrEqual:
+	beq $s2, $t3, equal
+	j divisible
+	
+equal: addi $t8, $t8, 1
+	j divisible
+	
+divisible:
+	bne $s4, 0, doneAfter1
+	addi $t5, $t5, 1
+doneAfter1:
+	addi $s1, $s1, 1
+	addi $t1, $t1, 4
+	j loop1
+	
+done1:
+	la $a0, endl
+	li $v0, 4
+	syscall
+	
+	la $a0, equalToMessage
+	li $v0, 4
+	syscall
+	
+	move $a0, $t8
+	li $v0, 1
+	syscall
+	
+	la $a0, endl
+	li $v0, 4
+	syscall
+	
+	la $a0, endl
+	li $v0, 4
+	syscall
+	
+	la $a0, lessThanMessage
+	li $v0, 4
+	syscall
+	add $t9, $t7, $t8
+	sub $t6, $s0, $t9
+	  
+	move $a0, $t6
+	li $v0, 1
+	syscall
+	
+	la $a0, endl
+	li $v0, 4
+	syscall
+	
+	la $a0, endl
+	li $v0, 4
+	syscall
+	
+	la $a0, greaterThanMessage
+	li $v0, 4
+	syscall
+	
+	move $a0, $t7
+	li $v0, 1
+	syscall
+	
+	la $a0, endl
+	li $v0, 4
+	syscall
+	
+	la $a0, endl
+	li $v0, 4
+	syscall
+	
+	la $a0, divisibleMessage
+	li $v0, 4
+	syscall
+	
+	move $a0, $t5
+	li $v0, 1
+	syscall
+	
+	la $a0, endl
+	li $v0, 4
+	syscall
+
+	li $v0, 10		# system call to exit
+	syscall	
+
+
+#################################
+#					 	#
+#     	 data segment		#
+#						#
+#################################
+
+	.data
+	
+array:		.space 80	
+question:	.asciiz "Enter the number of integers to be stored in the array: "
+wantElement:	.asciiz "Enter integer for array: "
+arrayContents: 	.asciiz  "Array contents: "
+askInteger: 	.asciiz "Enter an integer: "
+greaterThanMessage: .asciiz "The number of array elements greater than the input integer is: "
+lessThanMessage: .asciiz "The number of array elements less than the input integer is: "
+equalToMessage: .asciiz "The number of array elements equal to the input integer is: "
+divisibleMessage: .asciiz "The number of array elements evenly divisible by the input integer is: "
+space: 		.asciiz  " "
+endl: 		.asciiz  "\n"
+
+
+
+--------------------------------PART 1 (HELLO TA)-----------------------------------------------------------------------------------
+##
+## Program1.asm - prints out "hello world"
+##
+##	a0 - points to the string
+##
+
+#################################
+#					 	#
+#		text segment		#
+#						#
+#################################
+
+	.text		
+	.globl __start 
+
+__start:		# execution starts here
+	la $a0,str	# put string address into a0
+	li $v0,4	# system call to print
+	syscall		#   out a string
+
+	li $v0,10  # system call to exit
+	syscall	#    bye bye
+
+
+#################################
+#					 	#
+#     	 data segment		#
+#						#
+#################################
+
+	.data
+str:	.asciiz "Hello Yigit Ekin\n"
+n:	.word	10
+
+##
+## end of file Program1.asm
+
+
+---------------------------------------------------PART 2 (INPUT T0 V0)---------------------------------------------------------------
+##
+## Program2.asm asks user for temperature in Celsius,
+##  converts to Fahrenheit, prints the result.
+##
+##	v0 - reads in Celsius
+##	t0 - holds Fahrenheit result
+##	a0 - points to output strings
+##
+
+#################################
+#					 	#
+#		text segment		#
+#						#
+#################################
+
+	.text		
+	.globl __start	
+
+__start:
+	la $a0,prompt	# output prompt message on terminal
+	li $v0,4	# syscall 4 prints the string
+	syscall
+
+	li $v0, 5	# syscall 5 reads an integer
+	syscall
+
+	mul $t0,$v0,9	# to convert,multiply by 9,
+	div $t0,$t0,5	# divide by 5, then
+	add $t0,$t0,32	# add 32
+
+	la $a0,ans1	# print string before result
+	li $v0,4
+	syscall
+
+	move $a0,$t0	# print integer result
+	li $v0,1		# using syscall 1
+	syscall
+
+	la $a0,endl	# system call to print
+	li $v0,4		# out a newline
+	syscall
+
+	li $v0,10		# system call to exit
+	syscall		#    bye bye
+
+
+#################################
+#					 	#
+#     	 data segment		#
+#						#
+#################################
+
+	.data
+prompt:	.asciiz "Enter temperature (Celsius): "
+ans1:	.asciiz "The temperature in Fahrenheit is "
+endl:	.asciiz "\n"
+
+##
+## end of file Program2.asm
+
+---------------------------------------------------PART 3 (FIBONACCI)-------------------------------------------------------------------
+##
+##	Program3.asm is a loop implementation
+##	of the Fibonacci function
+##        
+
+#################################
+#					 	#
+#		text segment		#
+#						#
+#################################
+
+	.text		
+.globl __start
+ 
+__start:		# execution starts here
+	li $a0,4	# to calculate fib(7)
+	jal fib		# call fib
+	move $a0,$v0	# print result
+	li $v0, 1
+	syscall
+
+	la $a0,endl	# print newline
+	li $v0,4
+	syscall
+
+	li $v0,10
+	syscall		# bye bye
+
+#------------------------------------------------
+
+
+fib:	move $v0,$a0	# initialise last element
+	blt $v0,2,done	# fib(0)=0, fib(1)=1
+
+	li $t0,0	# second last element
+	li $v0,1	# last element
+
+loop:	add $t1,$t0,$v0	# get next value
+	move $t0,$v0	# update second last
+	move $v0,$t1	# update last element
+	sub $a0,$a0,1	# decrement count
+	bgt $a0,1,loop	# exit loop when count=0
+done:	jr $ra
+
+#################################
+#					 	#
+#     	 data segment		#
+#						#
+#################################
+
+	.data
+endl:	.asciiz "\n"
+
+##
+## end of Program3.asm
+
+----------------------------------------PART 4 (GIVEN EQUATION)---------------------------------------------------------------------------
+#################################
+#					 	#
+#		text segment		#
+#						#
+#################################
+
+	.text		
+	.globl __start
+
+__start:
+	la $a0, questionX
+	li $v0, 4
+	syscall
+	
+	li $v0, 5
+	syscall
+	
+	move $s0, $v0 #s0 = x
+	
+	la $a0, questionY
+	li $v0, 4
+	syscall
+	
+	li $v0, 5
+	syscall
+	
+	move $s1, $v0 #s1 = y
+	
+	la $a0, questionZ
+	li $v0, 4
+	syscall
+	
+	li $v0, 5
+	syscall
+	
+	move $s2, $v0 #s2 = z
+	bne $s1, 0, continue0
+	
+modByZero:
+
+	la $a0, modByZeroMessage
+	li $v0, 4
+	syscall
+	
+	li $v0, 10		# system call to exit
+	syscall
+
+continue0:
+	bne $s2, 0, continue1
+	
+	la $a0, dividedByZero
+	li $v0, 4
+	syscall
+	
+	li $v0, 10		# system call to exit
+	syscall
+
+continue1:
+		
+
+	addi $s0, $s0, 5
+	div $s0, $s1
+	mfhi $t0
+	div $t0, $s2
+	mflo $t1
+	
+	
+	la $a0, endl
+	li $v0, 4
+	syscall
+	
+	la $a0, result
+	li $v0, 4
+	syscall
+	
+	la $a0, 0($t1)
+	li $v0, 1
+	syscall
+	
+	li $v0, 10		# system call to exit
+	syscall
+	
+	
+	
+#################################
+#					 	#
+#     	 data segment		#
+#						#
+#################################
+
+	.data
+		
+questionX:	.asciiz "Enter the variable x for the calculation of (((x + 5) % y) / z): "
+questionY:	.asciiz "Enter the variable y for the calculation of (((x + 5) % y) / z): "
+questionZ:	.asciiz "Enter the variable z for the calculation of (((x + 5) % y) / z): "
+dividedByZero: 	.asciiz "z is 0. Division by 0 is not allowed."
+modByZeroMessage: .asciiz "y is 0. Mod by 0 is not allowed."
+result:		.asciiz "The result of (((x + 5) % y) / z) for the given inputs is: "
+endl: 		.asciiz  "\n"
